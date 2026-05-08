@@ -130,7 +130,7 @@ end)
 
 
 
--- [[ SCRIPT: KGM PC ZERO LAG NUKE V18 (KHÓA CHẾT HIỆU ỨNG - 0% CPU LAG) ]]
+-- BLACK ON OFF AND TELE FULL
 
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
