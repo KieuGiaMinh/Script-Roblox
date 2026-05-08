@@ -118,13 +118,19 @@ end)
 
 
 
+
+
 -- new nut tele full restore,black on off
 
 
 
 
 
--- [[ SCRIPT: KGM PC ULTIMATE NUKE V17 (FIX UI + XÓA INSTANT + TÀNG HÌNH NHÂN VẬT) ]]
+
+
+
+
+-- [[ SCRIPT: KGM PC ZERO LAG NUKE V18 (KHÓA CHẾT HIỆU ỨNG - 0% CPU LAG) ]]
 
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
@@ -136,30 +142,28 @@ local LP = Players.LocalPlayer
 local targetGui = pcall(function() return CoreGui.Name end) and CoreGui or LP:WaitForChild("PlayerGui")
 
 pcall(function()
-    -- 1. DIỆT SẠCH GIAO DIỆN LỖI CŨ
-    if targetGui:FindFirstChild("KGM_V17") then targetGui.KGM_V17:Destroy() end
+    -- 1. DỌN BÀN THỜ
+    if targetGui:FindFirstChild("KGM_V18") then targetGui.KGM_V18:Destroy() end
 
-    -- 2. TẠO GIAO DIỆN MỚI (ÉP ZINDEX ĐỂ ĐÉO BAO GIỜ BỊ ĐÈ MẤT NÚT)
+    -- 2. TẠO GIAO DIỆN ZINDEX CAO NHẤT (ĐÉO BAO GIỜ MẤT NÚT)
     local sg = Instance.new("ScreenGui", targetGui)
-    sg.Name = "KGM_V17"
+    sg.Name = "KGM_V18"
     sg.ResetOnSpawn = false
-    sg.DisplayOrder = 9999 -- Bắt buộc nằm trên cùng màn hình
+    sg.DisplayOrder = 99999 
 
-    -- MÀN HÌNH ĐEN CHO BLACK MODE (Nằm dưới cùng)
     local blackFrame = Instance.new("Frame", sg)
     blackFrame.Size = UDim2.new(1, 0, 1, 0)
     blackFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     blackFrame.BorderSizePixel = 0
-    blackFrame.Visible = false -- Đổi sang Visible thay vì Transparency cho an toàn
+    blackFrame.Visible = false 
     blackFrame.ZIndex = 1
 
-    -- KHUNG BẢNG ĐIỀU KHIỂN (Nằm trên cùng)
     local frame = Instance.new("Frame", sg)
     frame.Size = UDim2.new(0, 160, 0, 115)
     frame.Position = UDim2.new(0.5, -80, 0.2, 0)
     frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     frame.Active = true
-    frame.Draggable = true 
+    frame.Draggable = true -- Kéo thả PC cực mượt
     frame.ZIndex = 10
     Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
 
@@ -199,7 +203,6 @@ pcall(function()
     btnBlack.ZIndex = 11
     Instance.new("UICorner", btnBlack).CornerRadius = UDim.new(0, 6)
 
-    -- Cầu vồng chạy viền an toàn
     task.spawn(function()
         local hue = 0
         while task.wait(0.01) do
@@ -208,7 +211,7 @@ pcall(function()
         end
     end)
 
-    -- 3. LOGIC BLACK ON/OFF
+    -- 3. CHỨC NĂNG BLACK ON/OFF
     local isBlack = false
     btnBlack.MouseButton1Click:Connect(function()
         isBlack = not isBlack
@@ -218,26 +221,39 @@ pcall(function()
         pcall(function() RunService:Set3dRenderingEnabled(not isBlack) end)
     end)
 
-    -- 4. LOGIC TELE FULL (XÓA CÙNG LÚC + TÀNG HÌNH ALL)
+    -- 4. HỆ THỐNG DIỆT CHỦNG KHÔNG VÒNG LẶP (0 LAG)
     local isNuked = false
-    local hiddenParts = {}
-    local hiddenEffects = {}
+    local origTrans = {}
+    local hooked = {}
 
-    local function TanSatTuyetDoi(v)
+    local function BopCoTuyetDoi(v)
         pcall(function()
-            -- Tàng hình 100% mọi thực thể (KỂ CẢ XÁC MÀY)
-            if v:IsA("BasePart") or v:IsA("Decal") or v:IsA("Texture") then
+            -- Giết sạch hiệu ứng và KHÓA VAN (Nó cố bật lại là tắt ngay, đéo tốn CPU quét)
+            if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") or v:IsA("Light") or v:IsA("PointLight") or v:IsA("SpotLight") or v:IsA("SurfaceLight") or v:IsA("Highlight") or v:IsA("Fire") or v:IsA("Smoke") or v:IsA("Sparkles") then
+                v.Enabled = false
+                if not hooked[v] then
+                    hooked[v] = true
+                    v:GetPropertyChangedSignal("Enabled"):Connect(function()
+                        if isNuked and v.Enabled then v.Enabled = false end
+                    end)
+                end
+            
+            -- Tàng hình sạch sẽ MỌI THỨ
+            elseif v:IsA("BasePart") or v:IsA("Decal") or v:IsA("Texture") then
                 if v.Transparency ~= 1 then
-                    hiddenParts[v] = v.Transparency
+                    if origTrans[v] == nil then origTrans[v] = v.Transparency end
                     v.Transparency = 1
                 end
-            -- Bóp cổ mọi hiệu ứng
-            elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") or v:IsA("Light") or v:IsA("PointLight") or v:IsA("SpotLight") or v:IsA("SurfaceLight") or v:IsA("Highlight") or v:IsA("Fire") or v:IsA("Smoke") or v:IsA("Sparkles") or v:IsA("Explosion") then
-                if v.Enabled == true then
-                    hiddenEffects[v] = true
-                    v.Enabled = false
+                
+                -- Khóa độ trong suốt của nhân vật & camera (Nơi chứa vũ khí và chiêu thức)
+                if (LP.Character and v:IsDescendantOf(LP.Character)) or v:IsDescendantOf(Workspace.CurrentCamera) then
+                    if not hooked[v] then
+                        hooked[v] = true
+                        v:GetPropertyChangedSignal("Transparency"):Connect(function()
+                            if isNuked and v.Transparency ~= 1 then v.Transparency = 1 end
+                        end)
+                    end
                 end
-                if v:IsA("ParticleEmitter") then v.Rate = 0 end
             end
         end)
     end
@@ -249,65 +265,46 @@ pcall(function()
             btnTele.Text = "khôi phục"
             btnTele.TextColor3 = Color3.fromRGB(0, 255, 100)
             
-            -- Tắt sạch sương mù
+            -- Ép chết sương mù, bầu trời
             Lighting.GlobalShadows = false
             Lighting.FogEnd = 9e9
             for _, v in pairs(Lighting:GetChildren()) do pcall(function() v.Enabled = false end) end
             Workspace.Terrain.WaterTransparency = 1
+            Workspace.Terrain.Decoration = false
 
-            -- QUÉT CÙNG LÚC 100% ĐÉO CHỜ ĐỢI
-            -- Càn quét Workspace
-            local items = Workspace:GetDescendants()
-            for i = 1, #items do TanSatTuyetDoi(items[i]) end
-            
-            -- Càn quét Camera (Nơi giấu skill ẩn của game)
-            local camItems = Workspace.CurrentCamera:GetDescendants()
-            for i = 1, #camItems do TanSatTuyetDoi(camItems[i]) end
-            
-            -- Càn quét thẳng vào nhân vật mày
-            if LP.Character then
-                local charItems = LP.Character:GetDescendants()
-                for i = 1, #charItems do TanSatTuyetDoi(charItems[i]) end
-            end
-            
+            -- Quét một phát ăn ngay duy nhất (Đéo lặp lại)
+            task.spawn(function()
+                local items = Workspace:GetDescendants()
+                for i = 1, #items do BopCoTuyetDoi(items[i]) end
+                
+                local camItems = Workspace.CurrentCamera:GetDescendants()
+                for i = 1, #camItems do BopCoTuyetDoi(camItems[i]) end
+            end)
         else
             btnTele.Text = "tele full"
             btnTele.TextColor3 = Color3.fromRGB(255, 255, 255)
             
-            for v, trans in pairs(hiddenParts) do pcall(function() if v and v.Parent then v.Transparency = trans end end) end
-            for v, _ in pairs(hiddenEffects) do pcall(function() if v and v.Parent then v.Enabled = true end end) end
-            table.clear(hiddenParts)
-            table.clear(hiddenEffects)
-        end
-    end)
-
-    -- 5. LÍNH GÁC: GIẾT HIỆU ỨNG VŨ KHÍ LIÊN TỤC 60 FRAME/GIÂY
-    RunService.RenderStepped:Connect(function()
-        if isNuked then
-            pcall(function()
-                -- Giết mọi thứ spawn mới
-                for _, v in pairs(Workspace.CurrentCamera:GetChildren()) do TanSatTuyetDoi(v) end
-                
-                -- Giết hiệu ứng vũ khí trên tay mày (Bất tử chém)
-                if LP.Character then
-                    for _, v in pairs(LP.Character:GetDescendants()) do
-                        if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") or v:IsA("Highlight") or v:IsA("Light") then
-                            v.Enabled = false
-                            if v:IsA("ParticleEmitter") then v.Rate = 0 end
-                        elseif v:IsA("BasePart") then
-                            v.Transparency = 1
-                        end
-                    end
+            -- Nhả tàng hình ra
+            task.spawn(function()
+                for v, trans in pairs(origTrans) do 
+                    pcall(function() if v and v.Parent then v.Transparency = trans end end) 
                 end
+                -- Kệ mẹ đống hiệu ứng, đéo rảnh bật lại cho rác máy
+                table.clear(origTrans)
+                table.clear(hooked)
             end)
         end
     end)
 
+    -- 5. LÍNH CẢNH GIỚI: ĐỒ VỪA RƠI XUỐNG HOẶC QUÁI VỪA SPAWN LÀ BÓP CỔ
     Workspace.DescendantAdded:Connect(function(v)
-        if isNuked then task.defer(function() TanSatTuyetDoi(v) end) end
+        if isNuked then task.defer(function() BopCoTuyetDoi(v) end) end
     end)
-end)
+    Workspace.CurrentCamera.DescendantAdded:Connect(function(v)
+        if isNuked then task.defer(function() BopCoTuyetDoi(v) end) end
+    end)
 
+end)
 
 
 
