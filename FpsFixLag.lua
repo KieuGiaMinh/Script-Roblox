@@ -121,9 +121,7 @@ end)
 -- new nut tele
 
 
-
-
--- [[ SCRIPT: KGM INSTANT NUKE (NÚT TELE FULL TỐI THƯỢNG) ]]
+-- [[ SCRIPT: KGM PC INSTANT NUKE (TELE FULL + NO LAG) ]]
 
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
@@ -134,27 +132,25 @@ local LP = Players.LocalPlayer
 local targetGui = pcall(function() return CoreGui.Name end) and CoreGui or LP:WaitForChild("PlayerGui")
 
 pcall(function()
-    -- 1. Dọn dẹp UI cũ nếu có
-    if targetGui:FindFirstChild("KGM_NukePanel") then targetGui.KGM_NukePanel:Destroy() end
+    -- 1. XÓA SẠCH GIAO DIỆN CŨ
+    if targetGui:FindFirstChild("KGM_PC_Nuke") then targetGui.KGM_PC_Nuke:Destroy() end
 
-    -- 2. Tạo Bảng Điều Khiển (Kéo Thả Được)
+    -- 2. TẠO BẢNG ĐIỀU KHIỂN DÀNH RIÊNG CHO PC
     local sg = Instance.new("ScreenGui", targetGui)
-    sg.Name = "KGM_NukePanel"
+    sg.Name = "KGM_PC_Nuke"
     sg.ResetOnSpawn = false
 
     local frame = Instance.new("Frame", sg)
     frame.Size = UDim2.new(0, 160, 0, 75)
     frame.Position = UDim2.new(0.5, -80, 0.15, 0)
-    frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     frame.Active = true
-    frame.Draggable = true -- Có thể kéo di chuyển mượt mà
+    frame.Draggable = true -- Lệnh kéo thả thần thánh của PC (Bao mượt, đéo lỗi nút)
     Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
 
-    -- Viền cầu vồng
     local stroke = Instance.new("UIStroke", frame)
     stroke.Thickness = 2.5
 
-    -- Tiêu đề
     local title = Instance.new("TextLabel", frame)
     title.Size = UDim2.new(1, 0, 0, 25)
     title.Position = UDim2.new(0, 0, 0, 5)
@@ -164,7 +160,6 @@ pcall(function()
     title.Font = Enum.Font.GothamBold
     title.TextSize = 15
 
-    -- Nút TELE FULL
     local btn = Instance.new("TextButton", frame)
     btn.Size = UDim2.new(0, 130, 0, 32)
     btn.Position = UDim2.new(0.5, -65, 0, 35)
@@ -175,7 +170,7 @@ pcall(function()
     btn.TextSize = 14
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
 
-    -- Hiệu ứng cầu vồng chạy liên tục
+    -- Cầu vồng chạy viền
     task.spawn(function()
         local hue = 0
         while task.wait(0.01) do
@@ -184,56 +179,93 @@ pcall(function()
         end
     end)
 
-    -- 3. LOGIC TÀN SÁT (XÓA CÙNG LÚC & KHÔI PHỤC)
+    -- 3. HỆ THỐNG XÓA SẠCH VÀ KHÔI PHỤC (LÀM CÙNG LÚC)
     local isNuked = false
     local hiddenParts = {}
+    local hiddenEffects = {}
 
     btn.MouseButton1Click:Connect(function()
         isNuked = not isNuked
         
         if isNuked then
-            -- TRẠNG THÁI: TÀNG HÌNH TOÀN BỘ MAP (TĂNG FPS KỊCH TRẦN)
+            -- TRẠNG THÁI: XÓA SẠCH SÀNH SANH
             btn.Text = "khôi phục"
             btn.TextColor3 = Color3.fromRGB(0, 255, 100)
             
-            -- Ép chết sương mù và nước
+            -- Tắt sương mù, bầu trời
             Lighting.GlobalShadows = false
             Lighting.FogEnd = 9e9
             for _, v in pairs(Lighting:GetChildren()) do
-                if v:IsA("PostEffect") or v:IsA("Atmosphere") or v:IsA("Sky") then pcall(function() v:Destroy() end) end
+                if v:IsA("PostEffect") or v:IsA("Atmosphere") or v:IsA("Sky") then pcall(function() v.Enabled = false end) end
             end
-            Workspace.Terrain.WaterTransparency = 1
-            Workspace.Terrain.Decoration = false
 
-            -- Quét một phát ăn ngay toàn bộ vật thể
-            for _, v in pairs(Workspace:GetDescendants()) do
-                pcall(function()
-                    if v:IsA("BasePart") and not v:IsDescendantOf(LP.Character) then
-                        local p1 = v.Parent
-                        -- Bỏ qua NPC và Quái vật (giữ lại để farm)
-                        if not (p1 and p1:FindFirstChild("Humanoid")) then
-                            hiddenParts[v] = v.Transparency -- Lưu lại để tí khôi phục
-                            v.Transparency = 1
-                            v.Material = Enum.Material.SmoothPlastic
+            -- Càn quét 1 nhịp duy nhất
+            task.spawn(function()
+                local char = LP.Character
+                local tatCaVatThe = Workspace:GetDescendants()
+                
+                for i = 1, #tatCaVatThe do
+                    local v = tatCaVatThe[i]
+                    pcall(function()
+                        -- Bỏ qua xác mày để còn thấy đường mà múa
+                        if char and v:IsDescendantOf(char) then return end
+                        
+                        -- Tàng hình toàn bộ Đất, Đá, Nhà, Cây, Boss, NPC, Quái
+                        if v:IsA("BasePart") or v:IsA("Decal") or v:IsA("Texture") then
+                            if v.Transparency ~= 1 then
+                                hiddenParts[v] = v.Transparency
+                                v.Transparency = 1
+                            end
+                        -- Tắt ngúm mọi Chiêu Thức, Lửa, Khói, Ánh Sáng
+                        elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") or v:IsA("Light") or v:IsA("PointLight") or v:IsA("SurfaceLight") or v:IsA("Highlight") then
+                            if v.Enabled == true then
+                                hiddenEffects[v] = true
+                                v.Enabled = false
+                            end
                         end
-                    -- Xóa sổ mọi hiệu ứng, vệt chém, hạt nhấp nháy, hình dán
-                    elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") or v:IsA("Light") or v:IsA("PointLight") or v:IsA("SurfaceLight") then
-                        v.Enabled = false
-                    elseif v:IsA("Decal") or v:IsA("Texture") then
-                        v.Transparency = 1
-                    end
-                end)
-            end
+                    end)
+                    -- PC khỏe nên 5000 cục mới thèm nghỉ 1 mili-giây, bao trắng map cực nhanh
+                    if i % 5000 == 0 then task.wait() end
+                end
+            end)
+            
         else
-            -- TRẠNG THÁI: KHÔI PHỤC
+            -- TRẠNG THÁI: KHÔI PHỤC LẠI
             btn.Text = "tele full"
             btn.TextColor3 = Color3.fromRGB(255, 255, 255)
             
-            -- Lôi toàn bộ hình dạng ra lại cùng 1 lúc
-            for part, trans in pairs(hiddenParts) do
-                pcall(function() if part and part.Parent then part.Transparency = trans end end)
-            end
-            table.clear(hiddenParts) -- Xóa bộ nhớ dọn rác RAM
+            task.spawn(function()
+                for v, trans in pairs(hiddenParts) do
+                    pcall(function() if v and v.Parent then v.Transparency = trans end end)
+                end
+                for v, _ in pairs(hiddenEffects) do
+                    pcall(function() if v and v.Parent then v.Enabled = true end end)
+                end
+                table.clear(hiddenParts)
+                table.clear(hiddenEffects)
+            end)
+        end
+    end)
+
+    -- 4. BẮT SỰ KIỆN: QUÁI VỪA SPAWN LÀ TÀNG HÌNH NGAY
+    Workspace.DescendantAdded:Connect(function(v)
+        if isNuked then
+            task.defer(function()
+                pcall(function()
+                    local char = LP.Character
+                    if char and v:IsDescendantOf(char) then return end
+
+                    if v:IsA("BasePart") or v:IsA("Decal") or v:IsA("Texture") then
+                        hiddenParts[v] = v.Transparency
+                        v.Transparency = 1
+                    elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") or v:IsA("Light") or v:IsA("PointLight") or v:IsA("SurfaceLight") or v:IsA("Highlight") then
+                        hiddenEffects[v] = true
+                        v.Enabled = false
+                    end
+                end)
+            end)
         end
     end)
 end)
+
+
