@@ -114,3 +114,126 @@ task.spawn(function()
         end
     end
 end)
+
+
+
+
+-- new nut tele
+
+
+
+
+-- [[ SCRIPT: KGM INSTANT NUKE (NÚT TELE FULL TỐI THƯỢNG) ]]
+
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local Lighting = game:GetService("Lighting")
+
+local LP = Players.LocalPlayer
+local targetGui = pcall(function() return CoreGui.Name end) and CoreGui or LP:WaitForChild("PlayerGui")
+
+pcall(function()
+    -- 1. Dọn dẹp UI cũ nếu có
+    if targetGui:FindFirstChild("KGM_NukePanel") then targetGui.KGM_NukePanel:Destroy() end
+
+    -- 2. Tạo Bảng Điều Khiển (Kéo Thả Được)
+    local sg = Instance.new("ScreenGui", targetGui)
+    sg.Name = "KGM_NukePanel"
+    sg.ResetOnSpawn = false
+
+    local frame = Instance.new("Frame", sg)
+    frame.Size = UDim2.new(0, 160, 0, 75)
+    frame.Position = UDim2.new(0.5, -80, 0.15, 0)
+    frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    frame.Active = true
+    frame.Draggable = true -- Có thể kéo di chuyển mượt mà
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
+
+    -- Viền cầu vồng
+    local stroke = Instance.new("UIStroke", frame)
+    stroke.Thickness = 2.5
+
+    -- Tiêu đề
+    local title = Instance.new("TextLabel", frame)
+    title.Size = UDim2.new(1, 0, 0, 25)
+    title.Position = UDim2.new(0, 0, 0, 5)
+    title.BackgroundTransparency = 1
+    title.Text = "By KieuGiaMinh"
+    title.TextColor3 = Color3.fromRGB(255, 215, 0)
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 15
+
+    -- Nút TELE FULL
+    local btn = Instance.new("TextButton", frame)
+    btn.Size = UDim2.new(0, 130, 0, 32)
+    btn.Position = UDim2.new(0.5, -65, 0, 35)
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    btn.Text = "tele full"
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 14
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+
+    -- Hiệu ứng cầu vồng chạy liên tục
+    task.spawn(function()
+        local hue = 0
+        while task.wait(0.01) do
+            hue = (hue + 0.01) % 1
+            stroke.Color = Color3.fromHSV(hue, 1, 1)
+        end
+    end)
+
+    -- 3. LOGIC TÀN SÁT (XÓA CÙNG LÚC & KHÔI PHỤC)
+    local isNuked = false
+    local hiddenParts = {}
+
+    btn.MouseButton1Click:Connect(function()
+        isNuked = not isNuked
+        
+        if isNuked then
+            -- TRẠNG THÁI: TÀNG HÌNH TOÀN BỘ MAP (TĂNG FPS KỊCH TRẦN)
+            btn.Text = "khôi phục"
+            btn.TextColor3 = Color3.fromRGB(0, 255, 100)
+            
+            -- Ép chết sương mù và nước
+            Lighting.GlobalShadows = false
+            Lighting.FogEnd = 9e9
+            for _, v in pairs(Lighting:GetChildren()) do
+                if v:IsA("PostEffect") or v:IsA("Atmosphere") or v:IsA("Sky") then pcall(function() v:Destroy() end) end
+            end
+            Workspace.Terrain.WaterTransparency = 1
+            Workspace.Terrain.Decoration = false
+
+            -- Quét một phát ăn ngay toàn bộ vật thể
+            for _, v in pairs(Workspace:GetDescendants()) do
+                pcall(function()
+                    if v:IsA("BasePart") and not v:IsDescendantOf(LP.Character) then
+                        local p1 = v.Parent
+                        -- Bỏ qua NPC và Quái vật (giữ lại để farm)
+                        if not (p1 and p1:FindFirstChild("Humanoid")) then
+                            hiddenParts[v] = v.Transparency -- Lưu lại để tí khôi phục
+                            v.Transparency = 1
+                            v.Material = Enum.Material.SmoothPlastic
+                        end
+                    -- Xóa sổ mọi hiệu ứng, vệt chém, hạt nhấp nháy, hình dán
+                    elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") or v:IsA("Light") or v:IsA("PointLight") or v:IsA("SurfaceLight") then
+                        v.Enabled = false
+                    elseif v:IsA("Decal") or v:IsA("Texture") then
+                        v.Transparency = 1
+                    end
+                end)
+            end
+        else
+            -- TRẠNG THÁI: KHÔI PHỤC
+            btn.Text = "tele full"
+            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            
+            -- Lôi toàn bộ hình dạng ra lại cùng 1 lúc
+            for part, trans in pairs(hiddenParts) do
+                pcall(function() if part and part.Parent then part.Transparency = trans end end)
+            end
+            table.clear(hiddenParts) -- Xóa bộ nhớ dọn rác RAM
+        end
+    end)
+end)
